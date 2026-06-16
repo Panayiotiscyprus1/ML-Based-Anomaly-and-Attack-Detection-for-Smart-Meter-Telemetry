@@ -35,6 +35,13 @@ def _sniff_delimiter(path: Path, encoding: str) -> str:
         # Fall back to whichever common delimiter appears most
         counts = {d: sample.count(d) for d in [",", ";", "\t", "|"]}
         return max(counts, key=counts.get)
+    
+def _clean_numeric(series: pd.Series) -> pd.Series:
+    """Strip whitespace/tabs and convert to float; bad values become NaN."""
+    return pd.to_numeric(
+        series.astype(str).str.strip().replace({"": None, "nan": None}),
+        errors="coerce",
+    )
 
 
 def load_snapshot(path: str | Path) -> pd.DataFrame:
@@ -61,6 +68,11 @@ def load_snapshot(path: str | Path) -> pd.DataFrame:
                 decimal=".",          # change to "," if your export uses comma decimals
                 engine="python",      # tolerant parser
             )
+            numeric_cols = ["Normal Flow(m³)", "Back Flow(m³)", "Flow Rate(m³/h)",
+                            "RSRP(dBm)", "Temperature(℃)", "Longitude", "Latitude"]
+            for col in numeric_cols:
+                if col in df.columns:
+                    df[col] = _clean_numeric(df[col])
             print(f"[load_snapshot] loaded {len(df)} rows, {len(df.columns)} cols "
                   f"(encoding={encoding}, sep='{sep}')")
             return df
@@ -70,7 +82,7 @@ def load_snapshot(path: str | Path) -> pd.DataFrame:
 
 
 def inventory_summary(df: pd.DataFrame,
-                      sn_col: str = "Device SN",
+                      sn_col: str = "Device SN*",
                       name_col: str = "Device Name",
                       last_comm_col: str = "Last communication time",
                       alarm_col: str = "Alarm") -> None:
