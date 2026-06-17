@@ -1,21 +1,3 @@
-"""
-EOA Flowmeter Platform — Meter Data Scraper
-============================================
-Paginates through the internal API and writes all readings for a given
-device to a CSV file.
-
-Usage:
-    python scrape_meter.py
-
-Requirements:
-    pip install requests
-
-Notes:
-    - The Bearer token expires. If you get a 401, log in to the platform
-      again, open DevTools → Network → copy the new Authorization header.
-    - PAGE_SIZE=100 is a safe default; try 500 if the server allows it.
-    - SLEEP_BETWEEN_PAGES adds a small delay to avoid hammering the server.
-"""
 
 import csv
 import time
@@ -33,7 +15,7 @@ DEVICE_ID  = "202405101899"          # change per meter
 TOKEN      = os.getenv('JWT')
 
 PAGE_SIZE            = 100           # rows per request
-SLEEP_BETWEEN_PAGES  = 0.3          # seconds — be gentle on the server
+SLEEP_BETWEEN_PAGES  = 0.3          # seconds 
 OUTPUT_FILE          = f"meter_{DEVICE_ID}.csv"
 
 # ── HEADERS ───────────────────────────────────────────────────────────────────
@@ -119,7 +101,7 @@ def write_csv(rows: list[dict], path: str):
     print(f"Columns: {', '.join(fieldnames)}")
 
 
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# ── MAIN ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     rows = scrape_all()
