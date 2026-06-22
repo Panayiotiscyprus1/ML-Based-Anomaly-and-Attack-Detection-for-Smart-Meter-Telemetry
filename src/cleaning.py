@@ -93,6 +93,12 @@ def clean_meter(df: pd.DataFrame,
 
     # 2. Consumption
     work["consumption"] = work["flow"].diff()
+    
+    # Invalidate diffs that span reporting gaps
+    time_delta = work.index.to_series().diff()
+    gap_mask = time_delta > pd.Timedelta(hours=1)
+
+    work.loc[gap_mask, "consumption"] = float("nan")
 
     # 3. Rollbacks
     rollback_mask = work["consumption"] < 0
