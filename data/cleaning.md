@@ -200,12 +200,35 @@ to `reports/` (committed).
 ---
 
 ## 8. Open / continuation items
-
-- **Gap events:** transmission gaps are currently made explicit (`NaN`) and counted, but
-  not yet *emitted* as anomaly events. Emit them alongside rollbacks in the Week 7 event
-  layer (same two-layer pattern: clean the series + emit the event).
+ 
+- **Gap events:** transmission gaps are detected and emitted as events
+  (`cleaning.find_gap_events` + `events.emit_gap_events`). Each gap episode = one event
+  per meter, with start, end, and duration; severity is derived from duration via the
+  manufacturer thresholds (>=72h → `medium` / "Sleeping Device"; >=96h → `high` /
+  "Communication Alarm"). Sub-day gaps are ignored by default (`min_gap_hours=24`) since
+  meters batch-transmit ~twice daily and short silences are routine.
 - **Threshold tuning at fleet scale:** the coverage parameters (§6) were set on 5 meters;
   re-tune against the full 2,031-meter fleet when read-only database access lands.
 - **Profile-smoothing:** per-(hour, day-of-week) profiles built in Stage 3 may be noisy
-  for buckets with few samples given ~11–14 months of history; we shall maybe consider smoothing/pooling
+  for buckets with few samples given ~11–14 months of history; consider smoothing/pooling
   if instability appears.
+### 8.1 Live-mode (scheduled DB) design notes — continuation, NOT current scope
+ 
+The gap emitter above is built for the **batch / historical** case, where every gap is
+closed (data exists before and after the silence). A future scheduled job running against
+the live database needs three additional behaviours, to be designed against the real DB
+(do not build speculatively now):
+ 
+- **Grace period / maturity rule.** "No data right now" is usually *not* a gap — it is the
+  normal twice-daily transmission cadence. Do not flag an absence until it exceeds the
+  expected interval plus a margin (the manufacturer itself only alarms after 3–4 days).
+  A naive "flag any currently-missing meter" rule would fire constantly on meters simply
+  between batches.
+- **Open vs. closed gaps.** Live, a gap may be *ongoing* (meter silent now, resumption
+  unknown). Events need a state — "gap opened at T, still open" vs "gap closed, lasted D"
+  — unlike the batch case where all gaps are closed.
+- **De-duplication across runs.** A scheduled job on overlapping windows must not re-emit
+  the same gap each run; needs a "last processed" watermark or an event-identity key.
+Per-meter scoping is correct in both modes: the pipeline emits one gap event **per meter**;
+recognising that many meters gapping together is a single zone/network incident is the
+**Event Correlation Engine's** job, not this pipeline's.

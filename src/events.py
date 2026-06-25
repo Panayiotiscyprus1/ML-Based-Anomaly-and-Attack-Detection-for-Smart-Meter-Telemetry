@@ -45,6 +45,24 @@ REQUIRED_FIELDS = ["time", "source_type", "asset_id", "metric",
 ROLLBACK_SEVERITY = "medium"   # discussion point with the correlation intern
 
 
+def gap_severity(duration_hours: int) -> str:
+    """
+    Map a transmission-gap duration to a severity, anchored on the platform's
+    own manufacturer thresholds:
+      - 'Sleeping Device'     : data missing > 3 days (72h)
+      - 'Communication Alarm' : data missing >= 4 days (96h)
+    Short gaps are routine (meters batch-transmit ~twice daily), so anything
+    under a day is low severity.  <-- thresholds open to discussion with intern
+    """
+    if duration_hours >= 96:      # >= 4 days  (Communication Alarm)
+        return "high"
+    if duration_hours >= 72:      # 3-4 days   (Sleeping Device)
+        return "medium"
+    if duration_hours >= 24:      # >= 1 day
+        return "low"
+    return "low"
+
+
 def build_rollback_event(raw: dict,
                          source_type: str = "operational_view",
                          metadata: dict | None = None) -> dict:
@@ -86,6 +104,57 @@ def emit_rollback_events(clean_results,
     for res in clean_results:
         for raw in getattr(res, "rollback_events", []):
             events.append(build_rollback_event(raw, source_type=source_type))
+    return events
+
+
+def build_gap_event(raw: dict,
+                    source_type: str = "operational_view",
+                    metadata: dict | None = None) -> dict:
+    """
+    Turn one gap episode (from cleaning.find_gap_events) into a
+    schema-conformant event dict. A gap is a COLLECTIVE anomaly (a run of
+    missing hours), so duration is carried in metadata and severity is derived
+    from it via the manufacturer thresholds.
+    """
+    dur = int(raw["duration_hours"])
+    event = {
+        "time":           raw["time"],                 # gap start
+        "source_type":    source_type,
+        "asset_id":       str(raw["asset_id"]),
+        "metric":         "reporting_status",
+        "observed_value": 0.0,                          # 0 readings during the gap
+        "expected_value": float(dur),                  # hours that should have reported
+        "anomaly_score":  None,                         # rule -> no score
+        "method":         raw.get("method", "rule"),
+        "severity":       gap_severity(dur),
+        "confidence":     1.0,                          # rule is certain
+        "anomaly_type":   raw.get("anomaly_type", "transmission_gap"),
+        "context":        {"end_time": raw.get("end_time"),
+                           "duration_hours": dur},
+        "evidence":       raw.get("evidence", ""),
+        "metadata":       {"data_source": "EOA", **(metadata or {})},
+    }
+    return {k: event[k] for k in SCHEMA_FIELDS}
+
+
+def emit_gap_events(clean_results, source_type: str = "operational_view",
+                    min_gap_hours: int = 24) -> list[dict]:
+    """
+    Detect and emit transmission-gap events from one or more CleanResults.
+
+    Default min_gap_hours=24: ignore sub-day gaps, since meters batch-transmit
+    ~twice daily and short silences are routine (not anomalies). Tune as needed.
+    """
+    try:
+        from .cleaning import find_gap_events
+    except ImportError:
+        from cleaning import find_gap_events
+    if not isinstance(clean_results, (list, tuple)):
+        clean_results = [clean_results]
+    events = []
+    for res in clean_results:
+        for raw in find_gap_events(res, min_gap_hours=min_gap_hours):
+            events.append(build_gap_event(raw, source_type=source_type))
     return events
 
 

@@ -93,12 +93,6 @@ def clean_meter(df: pd.DataFrame,
 
     # 2. Consumption
     work["consumption"] = work["flow"].diff()
-    
-    # Invalidate diffs that span reporting gaps
-    time_delta = work.index.to_series().diff()
-    gap_mask = time_delta > pd.Timedelta(hours=1)
-
-    work.loc[gap_mask, "consumption"] = float("nan")
 
     # 3. Rollbacks
     rollback_mask = work["consumption"] < 0
@@ -172,6 +166,61 @@ def clean_meter(df: pd.DataFrame,
 
 def report_table(results):
     return pd.DataFrame([r.report for r in results]).set_index("device_id")
+
+
+def find_gap_events(result, min_gap_hours: int = 1) -> list:
+    """
+    Detect transmission-gap episodes in a cleaned meter and return them as raw
+    event records (collapsed runs of consecutive missing hours), mirroring the
+    rollback_events structure.
+
+    Runs on the POST-TRIM series, so a meter's pre-service / commissioning
+    silence is NOT reported as a gap -- only gaps during real operational life.
+
+    A gap = a run of consecutive hours with NaN consumption that originates
+    from MISSING reporting (not from a rollback NaN). We identify missing hours
+    as rows where 'flow' itself is NaN (inserted by the hourly reindex), which
+    distinguishes true non-reporting from a rollback (where flow is present but
+    consumption was nulled).
+
+    Each episode becomes one event with a start, end, and duration -- because a
+    gap is a COLLECTIVE anomaly (a run), not a single point.
+
+    Parameters
+    ----------
+    min_gap_hours : only report gaps at least this many hours long.
+    """
+    df = result.df
+    if "flow" not in df.columns or len(df) == 0:
+        return []
+
+    missing = df["flow"].isna().values          # True where the meter didn't report
+    idx = df.index
+    events = []
+
+    i, n = 0, len(missing)
+    while i < n:
+        if missing[i]:
+            j = i
+            while j < n and missing[j]:
+                j += 1
+            run_len = j - i                       # hours in this gap
+            if run_len >= min_gap_hours:
+                start = idx[i]
+                end = idx[j - 1]
+                events.append({
+                    "time": start.isoformat(),
+                    "end_time": end.isoformat(),
+                    "duration_hours": int(run_len),
+                    "asset_id": result.device_id,
+                    "anomaly_type": "transmission_gap",
+                    "method": "rule",
+                    "evidence": f"no reported readings for {run_len} consecutive hour(s)",
+                })
+            i = j
+        else:
+            i += 1
+    return events
 
 
 if __name__ == "__main__":
