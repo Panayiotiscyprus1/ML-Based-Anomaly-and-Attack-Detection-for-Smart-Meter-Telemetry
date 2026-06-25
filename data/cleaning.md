@@ -219,7 +219,7 @@ to `reports/` (committed).
     them is the anomaly.
   - *Structural* anomalies (counter rollback, transmission gap) have no comparable
     expected value, so `expected_value = null`; their defining quantity lives in
-    `observed_value` (the negative jump; the gap length in hours) and in `context`
+    `observed_value` (the negative jump; for rollback events) and in `context`
     (duration, end_time).
 
 

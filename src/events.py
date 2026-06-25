@@ -31,9 +31,10 @@ Schema convention -- two event families (documented for the intern):
     observed_value AND expected_value as a comparable pair in the same metric
     (the deviation between them is the anomaly).
   - STRUCTURAL anomalies (counter rollback, transmission gap) have no
-    "expected value" in that sense, so expected_value = null; their defining
-    quantity lives in observed_value (the negative jump; the gap length) and
-    in context (duration, end_time).
+    "expected value" in that sense, so expected_value = null. A rollback's
+    defining quantity is the negative jump (observed_value); a gap's defining
+    quantity is its length, carried in context.duration_hours (observed_value
+    is null for gaps to avoid implying a comparable metric reading).
 """
 
 from __future__ import annotations
@@ -131,7 +132,7 @@ def build_gap_event(raw: dict,
         "source_type":    source_type,
         "asset_id":       str(raw["asset_id"]),
         "metric":         "reporting_status",
-        "observed_value": float(dur),                  # the gap's defining quantity: its length
+        "observed_value": None,                        # structural: gap length lives in context.duration_hours
         "expected_value": None,                        # structural anomaly: no comparable expected value
         "anomaly_score":  None,                         # rule -> no score
         "method":         raw.get("method", "rule"),
