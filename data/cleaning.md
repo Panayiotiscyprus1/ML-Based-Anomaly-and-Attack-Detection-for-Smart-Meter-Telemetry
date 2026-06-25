@@ -212,6 +212,17 @@ to `reports/` (committed).
 - **Profile-smoothing:** per-(hour, day-of-week) profiles built in Stage 3 may be noisy
   for buckets with few samples given ~11–14 months of history; consider smoothing/pooling
   if instability appears.
+- **Event schema convention (two families).** Documented so event consumers (the
+  correlation engine) can interpret any event type consistently:
+  - *Value-based* anomalies (consumption spike, night burst) populate `observed_value`
+    AND `expected_value` as a comparable pair in the same metric — the deviation between
+    them is the anomaly.
+  - *Structural* anomalies (counter rollback, transmission gap) have no comparable
+    expected value, so `expected_value = null`; their defining quantity lives in
+    `observed_value` (the negative jump; the gap length in hours) and in `context`
+    (duration, end_time).
+
+
 ### 8.1 Live-mode (scheduled DB) design notes — continuation, NOT current scope
  
 The gap emitter above is built for the **batch / historical** case, where every gap is

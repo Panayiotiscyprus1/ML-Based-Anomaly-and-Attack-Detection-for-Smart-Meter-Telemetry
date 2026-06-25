@@ -25,6 +25,15 @@ change):
   - expected_value = null             (true value during a reset is unknown)
   - severity      = "medium"          (data-integrity / possible tamper; not an
                                         active leak)  <-- DISCUSS with intern
+
+Schema convention -- two event families (documented for the intern):
+  - VALUE-BASED anomalies (e.g. consumption spike, night burst) populate
+    observed_value AND expected_value as a comparable pair in the same metric
+    (the deviation between them is the anomaly).
+  - STRUCTURAL anomalies (counter rollback, transmission gap) have no
+    "expected value" in that sense, so expected_value = null; their defining
+    quantity lives in observed_value (the negative jump; the gap length) and
+    in context (duration, end_time).
 """
 
 from __future__ import annotations
@@ -122,8 +131,8 @@ def build_gap_event(raw: dict,
         "source_type":    source_type,
         "asset_id":       str(raw["asset_id"]),
         "metric":         "reporting_status",
-        "observed_value": 0.0,                          # 0 readings during the gap
-        "expected_value": float(dur),                  # hours that should have reported
+        "observed_value": float(dur),                  # the gap's defining quantity: its length
+        "expected_value": None,                        # structural anomaly: no comparable expected value
         "anomaly_score":  None,                         # rule -> no score
         "method":         raw.get("method", "rule"),
         "severity":       gap_severity(dur),
