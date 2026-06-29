@@ -76,9 +76,10 @@ def _is_holiday(index: pd.DatetimeIndex) -> pd.Series:
     return (fixed | moving)
 
 
+#optional pass PROFILE constructed from profile.py
 def build_features(df: pd.DataFrame,
                    windows: list[int] = WINDOWS,
-                   lags: list[int] = LAGS) -> pd.DataFrame:
+                   lags: list[int] = LAGS, profile=None) -> pd.DataFrame:
     """
     Build families 1-3 of the feature matrix for one cleaned meter.
 
@@ -125,6 +126,14 @@ def build_features(df: pd.DataFrame,
     f["hour_cos"] = np.cos(2 * np.pi * hour / 24)
     f["dow_sin"]  = np.sin(2 * np.pi * dow / 7)
     f["dow_cos"]  = np.cos(2 * np.pi * dow / 7)
+
+    # --- Family 4: profile-deviation (only if a profile was supplied) ---
+    if profile is not None:
+        try:
+            from .meter_profile import add_deviation      # package-relative
+        except ImportError:
+            from meter_profile import add_deviation        # flat / src on path
+        f = add_deviation(f, profile)
 
     return f
 
