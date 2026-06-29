@@ -3,7 +3,6 @@
 **Project:** ML-Based Anomaly and Attack Detection for Smart-Meter Telemetry
 **Stage:** 3 (Feature engineering)
 **Module:** `src/features.py` (families 1–3 + temporal) and `src/profile.py` (family 4)
-**Audience:** future maintainers, supervisor, and the final-report methodology section.
 
 The feature matrix is built **per meter** from the cleaned `consumption` series: one row
 per hour, one column per feature. It is the shared input for both the **baseline
@@ -13,12 +12,9 @@ same matrix serves every detector and keeps their scores comparable.
 The four feature families map onto the **point / contextual / collective** anomaly
 framework — that mapping is *why* all four are needed.
 
-Legend for "Status": **built** = implemented in `features.py`; **planned** = specified
-here, implemented later (profile = Day 2; the baseline's own robust stats = Stage 3 build).
-
 ---
 
-## Family 1 — Raw / instantaneous  *(built)*
+## Family 1 — Raw / instantaneous 
 
 | Column | Meaning |
 |---|---|
