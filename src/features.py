@@ -1,6 +1,4 @@
 """
-features.py
------------
 Stage 3 (part A): build a per-meter FEATURE MATRIX from a cleaned meter.
 
 Input  : a cleaned meter df (from cleaning.clean_meter -> CleanResult.df),
@@ -8,7 +6,7 @@ Input  : a cleaned meter df (from cleaning.clean_meter -> CleanResult.df),
 Output : the same frame with feature columns added (one row per hour).
 
 Feature families (this file covers 1-3; family 4 = profile-deviation is added
-in profile.py / Day 2):
+in meter_profile.py):
 
   1. Raw / instantaneous   -- consumption itself.
   2. Statistical / windowed -- rolling mean/std/min/max over 24h and 168h,
@@ -43,27 +41,27 @@ CYPRUS_HOLIDAYS = {
     "03-25",  # Greek Independence Day
     "04-01",  # Cyprus National Day
     "05-01",  # Labour Day
-    "08-15",  # Assumption / Dormition
-    "10-01",  # Cyprus Independence Day
-    "10-28",  # Ohi Day
+    "08-15",  # 15vgustos
+    "10-01",  # Independence Day
+    "10-28",  # Oxi
     "12-25",  # Christmas
     "12-26",  # Boxing Day
 }
 # Moving (Orthodox-calendar) holidays, explicit per year:
 CYPRUS_MOVING_HOLIDAYS = {
     # 2024
-    "2024-03-18",  # Green Monday
-    "2024-05-03",  # Good Friday
+    "2024-03-18",  # Kathara Deftera
+    "2024-05-03",  # Megali Paraskevi
     "2024-05-06",  # Easter Monday
     "2024-06-24",  # Kataklysmos (Pentecost Monday)
     # 2025
-    "2025-03-03",  # Green Monday
-    "2025-04-18",  # Good Friday
+    "2025-03-03",  # Kathara Deftera
+    "2025-04-18",  # Megali Paraskevi
     "2025-04-21",  # Easter Monday
     "2025-06-09",  # Kataklysmos
     # 2026
-    "2026-02-23",  # Green Monday
-    "2026-04-10",  # Good Friday
+    "2026-02-23",  # Kathara Deftera
+    "2026-04-10",  # Megali Paraskevi
     "2026-04-13",  # Easter Monday
     "2026-06-01",  # Kataklysmos
 }

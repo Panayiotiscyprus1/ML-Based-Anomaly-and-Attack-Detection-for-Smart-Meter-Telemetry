@@ -25,7 +25,7 @@ framework — that mapping is *why* all four are needed.
 
 ---
 
-## Family 2 — Statistical / windowed  *(built)*
+## Family 2 — Statistical / windowed  
 
 Rolling statistics over **24 h** (daily) and **168 h** (weekly) windows, plus **lag**
 features. All are **NaN-aware** (`min_periods`) and **lag by one hour** (`shift(1)`) so a
@@ -48,7 +48,7 @@ Note: the **baseline z-score does NOT use `roll_mean`/`roll_std`** — it comput
 
 ---
 
-## Family 3 — Temporal / contextual  *(built)*
+## Family 3 — Temporal / contextual
 
 Derived from each row's timestamp. Encode **when** a reading happened — the basis for
 contextual judgement.
@@ -73,7 +73,7 @@ of day as smooth and periodic.
 
 ---
 
-## Family 4 — Profile-deviation  *(planned — Day 2, `profile.py`)*
+## Family 4 — Profile-deviation  *(`profile.py`)*
 
 The single most valuable contextual feature. Built in two parts:
 
@@ -103,7 +103,7 @@ join is obtained).
 
 ---
 
-## Note: the baseline's own robust statistics  *(planned — Stage 3 build, `baseline.py`)*
+## Note: the baseline's own robust statistics  *(`baseline.py`)*
 
 The robust rolling z-score does **not** reuse `roll_mean`/`roll_std` (those are mean-based,
 kept for the ML methods). The baseline computes its **own** lagging, NaN-aware statistics:
@@ -123,7 +123,7 @@ statistics, not general-purpose features. This keeps the design rule visible in 
 | Consumer | Uses |
 |---|---|
 | **Baseline detector** (Stage 3) | `consumption`, `deviation`/`profile_expected`, temporal fields, the manufacturer-rule inputs; computes its own median/MAD internally. |
-| **ML methods** — Isolation Forest, LOF (Weeks 4–5) | The full engineered matrix (windowed stats, lags, cyclical temporal, deviation). |
+| **ML methods** — Isolation Forest, LOF | The full engineered matrix (windowed stats, lags, cyclical temporal, deviation). |
 | **Behavioural clustering** | The 168-cell profile vectors per meter. |
 | **Evaluation** (Week 8) | Detector scores (kept **continuous**, not collapsed to flags) for fair AUC comparison across baseline vs ML. |
 
@@ -145,10 +145,9 @@ statistics, not general-purpose features. This keeps the design rule visible in 
 |---|---|---|
 | Rolling windows | 24 h, 168 h | `features.WINDOWS` |
 | Lags | 1, 24, 168 h | `features.LAGS` |
-| Profile buckets | 168 (hour × day-of-week), median | `profile.py` (planned) |
-| Robust z threshold | ≈ 3.5 (modified z) | `baseline.py` (planned) |
-| Denominator floor `σ_min` | set per meter from non-zero scale | `baseline.py` (planned) |
+| Profile buckets | 168 (hour × day-of-week), median | `profile.py` |
+| Robust z threshold | ≈ 3.5 (modified z) | `baseline.py` |
+| Denominator floor `σ_min` | set per meter from non-zero scale | `baseline.py` |
 
 > Cyprus moving-holiday dates (Green Monday, Good Friday, Easter Monday, Kataklysmos for
-> 2024–26) are hardcoded in `features.py` and should be verified against an official
-> calendar if the data range changes.
+> 2024–26) are hardcoded in `features.py`
